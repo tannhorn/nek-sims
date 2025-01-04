@@ -153,7 +153,7 @@ gmsh.option.setNumber("Mesh.SaveParametric", 0)
 # Generate and save
 # -----------------------------------------------------------------------------
 gmsh.model.mesh.generate(2)
-gmsh.write("non_uniform_extruded_quads.msh")
+gmsh.write("rectangle.msh")
 
 # Finalize and exit
 gmsh.finalize()
