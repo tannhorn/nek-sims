@@ -1,3 +1,4 @@
+import numpy as np
 import gmsh
 
 # Initialize Gmsh
@@ -16,8 +17,9 @@ nele = 7
 Re = 1000
 yplus = 1
 
-# if laminar:
-#    ytilde =
+growth_rate = 1.4
+num_y_prog = 4
+num_x_ele = 3
 
 ymin = -1.0
 ymax = 1.0
@@ -25,12 +27,23 @@ xmin = 0.0
 xmax = 1.0
 zval = 0.0
 
-dyprog = 0.4
+if laminar:
+    ytilde = yplus / np.sqrt(3 * Re)
+else:
+    ytilde = yplus * 20 / Re
 
-growth_rate = 1.2
-num_y_prog = 4
-num_y_cst = 4
-num_x = 3
+y0 = ytilde * nele
+
+dyprog = 0
+rate = 1
+for i in range(num_y_prog - 1):
+    rate = growth_rate**i
+    dyprog += y0 * rate
+
+rate = growth_rate ** (num_y_prog - 1)
+dy1 = y0 * rate
+dycst = ymax - ymin - 2 * dyprog
+num_y_cst = int(np.ceil(dycst / dy1)) + 1
 
 # -----------------------------------------------------------------------------
 # 1) Define geometry
@@ -92,7 +105,7 @@ extrusion = gmsh.model.geo.extrude(
     1.0,
     0,
     0,  # (dx, dy, dz) - extrude in +x direction
-    numElements=[num_x],  # number of layers in the extrusion
+    numElements=[num_x_ele],  # number of layers in the extrusion
     heights=[xmax],  # total height of the extrusion
     recombine=True,  # ensure quads
 )
