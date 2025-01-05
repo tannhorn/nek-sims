@@ -11,31 +11,40 @@ gmsh.model.add("non_uniform_line_extrude")
 # -----------------------------------------------------------------------------
 # 0) Data
 # -----------------------------------------------------------------------------
+laminar = True
+nele = 7
+Re = 1000
+yplus = 1
+
+# if laminar:
+#    ytilde =
+
+ymin = -1.0
+ymax = 1.0
 xmin = 0.0
 xmax = 1.0
-ymin = 0.0
-ymax = 1.0
 zval = 0.0
 
-dxprog = 0.4
+dyprog = 0.4
 
 growth_rate = 1.2
-num_x = 20
-num_y = 10
+num_y_prog = 4
+num_y_cst = 4
+num_x = 3
 
 # -----------------------------------------------------------------------------
 # 1) Define geometry
 # -----------------------------------------------------------------------------
 # Create two points on the x-axis
 p1 = gmsh.model.geo.addPoint(xmin, ymin, zval)
-p2 = gmsh.model.geo.addPoint(xmax, ymin, zval)
+p2 = gmsh.model.geo.addPoint(xmin, ymax, zval)
 
 # Define additional points to split the line into three segments
 p_mid1 = gmsh.model.geo.addPoint(
-    dxprog, ymin, zval
+    xmin, ymin + dyprog, zval
 )  # Transition point to constant region
 p_mid2 = gmsh.model.geo.addPoint(
-    xmax - dxprog, ymin, zval
+    xmin, ymax - dyprog, zval
 )  # Transition point to decreasing region
 
 # Create lines for each region
@@ -56,13 +65,15 @@ l3 = gmsh.model.geo.addLine(p_mid2, p2)  # Decreasing mesh size
 #                  = 1.0 -> uniform distribution
 
 # Set transfinite curve for increasing mesh size
-gmsh.model.geo.mesh.setTransfiniteCurve(l1, num_x, "Progression", growth_rate)
+gmsh.model.geo.mesh.setTransfiniteCurve(l1, num_y_prog, "Progression", growth_rate)
 
 # Set transfinite curve for constant mesh size
-gmsh.model.geo.mesh.setTransfiniteCurve(l2, num_x, "Progression", 1.0)
+gmsh.model.geo.mesh.setTransfiniteCurve(l2, num_y_cst, "Progression", 1.0)
 
 # Set transfinite curve for decreasing mesh size (mirror of l1)
-gmsh.model.geo.mesh.setTransfiniteCurve(l3, num_x, "Progression", 1.0 / growth_rate)
+gmsh.model.geo.mesh.setTransfiniteCurve(
+    l3, num_y_prog, "Progression", 1.0 / growth_rate
+)
 
 # Make the geometry entities consistent
 gmsh.model.geo.synchronize()
@@ -78,11 +89,11 @@ gmsh.model.geo.synchronize()
 
 extrusion = gmsh.model.geo.extrude(
     [(1, l1), (1, l2), (1, l3)],  # Which entities to extrude (1D line)
-    0,
     1.0,
-    0,  # (dx, dy, dz) - extrude in +y direction
-    numElements=[num_y],  # number of layers in the extrusion
-    heights=[ymax],  # total height of the extrusion
+    0,
+    0,  # (dx, dy, dz) - extrude in +x direction
+    numElements=[num_x],  # number of layers in the extrusion
+    heights=[xmax],  # total height of the extrusion
     recombine=True,  # ensure quads
 )
 
@@ -98,39 +109,39 @@ gmsh.model.setPhysicalName(1, inlet_group, "Inlet")
 all_lines = gmsh.model.getEntities(dim=1)  # Get all 1D entities
 all_line_tags = [line[1] for line in all_lines]  # Extract tags
 
-# Filter vertical lines only
-vertical_line_tags = [
+# Filter x lines only
+x_line_tags = [
     line
     for line in all_line_tags
     if abs(
         gmsh.model.getBoundingBox(1, line)[0] - gmsh.model.getBoundingBox(1, line)[3]
     )
-    < 1e-6 * (xmax - xmin)  # x_min ≈ x_max
+    < 1e-6 * (ymax - ymin)  # y_min ≈ y_max
 ]
 
-# Dictionary to store vertical lines and their x-coordinates
+# Dictionary to store x lines and their y-coordinates
 line_positions = {}
 
-for line_tag in vertical_line_tags:
+for line_tag in x_line_tags:
     bbox = gmsh.model.getBoundingBox(1, line_tag)
-    x_min, x_max = bbox[0], bbox[3]  # Extract x-coordinates
-    line_positions[line_tag] = x_min  # Use x_min to sort
+    y_min, y_max = bbox[1], bbox[4]  # Extract y-coordinates
+    line_positions[line_tag] = y_min  # Use y_min to sort
 
 # Find left and right sides
-# Sort by x-coordinate
+# Sort by y-coordinate
 sorted_lines = sorted(line_positions.items(), key=lambda item: item[1])
-left_side = sorted_lines[0][0]  # Line with the smallest x-coordinate
-right_side = sorted_lines[-1][0]  # Line with the largest x-coordinate
+left_side = sorted_lines[0][0]  # Line with the smallest y-coordinate
+right_side = sorted_lines[-1][0]  # Line with the largest y-coordinate
 
 # Assign to physical groups
 left_side_group = gmsh.model.addPhysicalGroup(1, [left_side])
-gmsh.model.setPhysicalName(1, left_side_group, "LeftSide")
+gmsh.model.setPhysicalName(1, left_side_group, "BottomSide")
 
 right_side_group = gmsh.model.addPhysicalGroup(1, [right_side])
-gmsh.model.setPhysicalName(1, right_side_group, "RightSide")
+gmsh.model.setPhysicalName(1, right_side_group, "TopSide")
 
-# The outlet (top) is everything else
-outlet_tags = set(all_line_tags) - set(vertical_line_tags) - set(inlet_tags)
+# The outlet (right) is everything else
+outlet_tags = set(all_line_tags) - set(x_line_tags) - set(inlet_tags)
 outlet_group = gmsh.model.addPhysicalGroup(1, list(outlet_tags))
 gmsh.model.setPhysicalName(1, outlet_group, "Outlet")
 
