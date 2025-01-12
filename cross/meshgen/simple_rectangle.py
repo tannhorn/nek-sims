@@ -1,4 +1,3 @@
-import numpy as np
 import gmsh
 
 # Initialize Gmsh
@@ -18,32 +17,14 @@ Re = 1000
 yplus = 1
 
 growth_rate = 1.4
-num_y_prog = 4
+num_y_prog = 5
 num_x_ele = 3
 
-ymin = -1.0
+ymin = 0.0
 ymax = 1.0
 xmin = 0.0
 xmax = 1.0
 zval = 0.0
-
-if laminar:
-    ytilde = yplus / np.sqrt(3 * Re)
-else:
-    ytilde = yplus * 20 / Re
-
-y0 = ytilde * nele
-
-dyprog = 0
-rate = 1
-for i in range(num_y_prog - 1):
-    rate = growth_rate**i
-    dyprog += y0 * rate
-
-rate = growth_rate ** (num_y_prog - 1)
-dy1 = y0 * rate
-dycst = ymax - ymin - 2 * dyprog
-num_y_cst = int(np.ceil(dycst / dy1)) + 1
 
 # -----------------------------------------------------------------------------
 # 1) Define geometry
@@ -52,18 +33,8 @@ num_y_cst = int(np.ceil(dycst / dy1)) + 1
 p1 = gmsh.model.geo.addPoint(xmin, ymin, zval)
 p2 = gmsh.model.geo.addPoint(xmin, ymax, zval)
 
-# Define additional points to split the line into three segments
-p_mid1 = gmsh.model.geo.addPoint(
-    xmin, ymin + dyprog, zval
-)  # Transition point to constant region
-p_mid2 = gmsh.model.geo.addPoint(
-    xmin, ymax - dyprog, zval
-)  # Transition point to decreasing region
-
 # Create lines for each region
-l1 = gmsh.model.geo.addLine(p1, p_mid1)  # Increasing mesh size
-l2 = gmsh.model.geo.addLine(p_mid1, p_mid2)  # Constant mesh size
-l3 = gmsh.model.geo.addLine(p_mid2, p2)  # Decreasing mesh size
+l1 = gmsh.model.geo.addLine(p1, p2)
 
 # -----------------------------------------------------------------------------
 # 2) Impose a non-uniform 1D mesh distribution
@@ -80,14 +51,6 @@ l3 = gmsh.model.geo.addLine(p_mid2, p2)  # Decreasing mesh size
 # Set transfinite curve for increasing mesh size
 gmsh.model.geo.mesh.setTransfiniteCurve(l1, num_y_prog, "Progression", growth_rate)
 
-# Set transfinite curve for constant mesh size
-gmsh.model.geo.mesh.setTransfiniteCurve(l2, num_y_cst, "Progression", 1.0)
-
-# Set transfinite curve for decreasing mesh size (mirror of l1)
-gmsh.model.geo.mesh.setTransfiniteCurve(
-    l3, num_y_prog, "Progression", 1.0 / growth_rate
-)
-
 # Make the geometry entities consistent
 gmsh.model.geo.synchronize()
 
@@ -101,7 +64,7 @@ gmsh.model.geo.synchronize()
 # - recombine=True ensures quadrilateral elements in the newly created surface
 
 extrusion = gmsh.model.geo.extrude(
-    [(1, l1), (1, l2), (1, l3)],  # Which entities to extrude (1D line)
+    [(1, l1)],  # Which entities to extrude (1D line)
     1.0,
     0,
     0,  # (dx, dy, dz) - extrude in +x direction
@@ -115,7 +78,7 @@ gmsh.model.geo.synchronize()
 # -----------------------------------------------------------------------------
 # 4) Add physical groups
 # -----------------------------------------------------------------------------
-inlet_tags = [l1, l2, l3]
+inlet_tags = [l1]
 inlet_group = gmsh.model.addPhysicalGroup(1, inlet_tags)
 gmsh.model.setPhysicalName(1, inlet_group, "Inlet")
 
@@ -137,8 +100,11 @@ line_positions = {}
 
 for line_tag in x_line_tags:
     bbox = gmsh.model.getBoundingBox(1, line_tag)
+    print(bbox)
     y_min, y_max = bbox[1], bbox[4]  # Extract y-coordinates
     line_positions[line_tag] = y_min  # Use y_min to sort
+
+print(line_positions)
 
 # Find left and right sides
 # Sort by y-coordinate
@@ -177,7 +143,7 @@ gmsh.option.setNumber("Mesh.SaveParametric", 0)
 # Generate and save
 # -----------------------------------------------------------------------------
 gmsh.model.mesh.generate(2)
-gmsh.write("nonuniform_rectangle.msh")
+gmsh.write("simple_rectangle.msh")
 
 # Finalize and exit
 gmsh.finalize()

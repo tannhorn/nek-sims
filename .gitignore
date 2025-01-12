@@ -1,0 +1,10 @@
+# Nek5000 files
+obj/
+*.nek5000
+nek5000
+SESSION.NAME
+build.log
+makefile
+*.f0*
+.state
+.usr
