@@ -208,24 +208,27 @@ if __name__ == "__main__":
 
     coord_x = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
     coord_y = [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0]
-    disc_x = [1, 2, 3, 4, 5]  # Discretization for x-direction lines
-    disc_y = [1, 2, 3, 4, 5]  # Discretization for y-direction lines
+    disc_x = [2, 3, 4, 5, 6]  # Discretization for x-direction lines
+    disc_y = [2, 3, 4, 5, 6]  # Discretization for y-direction lines
     prog_x = [0.9, 1.1, 1.0, 0.7, 1.2]  # Progression for x-direction lines
     prog_y = [1, 1, 1, 1, 1]  # Progression for y-direction lines
 
     points, point_map = generate_points(coord_x, coord_y)
+    print(f"Generated {len(points)} points: {points}")
+
     line_map = generate_lines(coord_x, coord_y, point_map)
+    print(f"Generated {len(line_map)} lines.")
+
     apply_transfinite_curves(line_map, coord_x, coord_y, disc_x, disc_y, prog_x, prog_y)
+    print(f"Meshed {len(line_map)} lines.")
 
     surfaces = generate_surfaces(coord_x, coord_y, point_map, line_map)
+    print(f"Generated {len(surfaces)} surfaces: {surfaces}")
 
     add_physical_groups(coord_x, coord_y, line_map, surfaces)
+    print(f"Added physical groups.")
 
-    mesh_and_save(surfaces, "mesh.msh")
-
-    print(f"Generated {len(points)} points: {points}")
-    print(f"Generated {len(line_map)} lines.")
-    print(f"Generated {len(surfaces)} surfaces: {surfaces}")
+    mesh_and_save(surfaces, "cross.msh")
 
     # Finalize Gmsh
     gmsh.finalize()
