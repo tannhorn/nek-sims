@@ -196,7 +196,8 @@ def add_physical_groups(
         for j in range(len(coord_y) - 1)
         if (0, j) not in exclude and (0, j + 1) not in exclude
     ]
-    gmsh.model.addPhysicalGroup(1, left_lines, tag=1)
+    left_group = gmsh.model.addPhysicalGroup(1, left_lines, tag=1)
+    gmsh.model.setPhysicalName(1, left_group, "LeftSide")
 
     # Physical group for lines at xmax (right boundary)
     right_lines = [
@@ -205,7 +206,8 @@ def add_physical_groups(
         if (len(coord_x) - 1, j) not in exclude
         and (len(coord_x) - 1, j + 1) not in exclude
     ]
-    gmsh.model.addPhysicalGroup(1, right_lines, tag=2)
+    right_group = gmsh.model.addPhysicalGroup(1, right_lines, tag=2)
+    gmsh.model.setPhysicalName(1, right_group, "RightSide")
 
     # Physical group for lines at ymin (bottom boundary)
     bottom_lines = [
@@ -213,7 +215,8 @@ def add_physical_groups(
         for i in range(len(coord_x) - 1)
         if (i, 0) not in exclude and (i + 1, 0) not in exclude
     ]
-    gmsh.model.addPhysicalGroup(1, bottom_lines, tag=3)
+    bottom_group = gmsh.model.addPhysicalGroup(1, bottom_lines, tag=3)
+    gmsh.model.setPhysicalName(1, bottom_group, "BottomSide")
 
     # Physical group for lines at ymax (top boundary)
     top_lines = [
@@ -222,10 +225,12 @@ def add_physical_groups(
         if (i, len(coord_y) - 1) not in exclude
         and (i + 1, len(coord_y) - 1) not in exclude
     ]
-    gmsh.model.addPhysicalGroup(1, top_lines, tag=4)
+    top_group = gmsh.model.addPhysicalGroup(1, top_lines, tag=4)
+    gmsh.model.setPhysicalName(1, top_group, "TopSide")
 
     # Physical group for all surfaces
-    gmsh.model.addPhysicalGroup(2, surfaces, tag=5)
+    surface_group = gmsh.model.addPhysicalGroup(2, surfaces, tag=5)
+    gmsh.model.setPhysicalName(2, surface_group, "Domain")
 
 
 def mesh_and_save(surfaces: list[int], filename: str):

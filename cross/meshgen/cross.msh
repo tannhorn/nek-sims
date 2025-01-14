@@ -1,6 +1,14 @@
 $MeshFormat
 4.1 0 8
 $EndMeshFormat
+$PhysicalNames
+5
+1 1 "LeftSide"
+1 2 "RightSide"
+1 3 "BottomSide"
+1 4 "TopSide"
+2 5 "Domain"
+$EndPhysicalNames
 $Entities
 32 52 21 0
 1 -3 -1 0 0 
