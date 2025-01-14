@@ -241,6 +241,15 @@ def mesh_and_save(surfaces: list[int], filename: str):
     surfaces (list[int]): List of Gmsh surface tags.
     filename (str): Output .msh file name.
     """
+
+    # Options for generating and saving
+    gmsh.option.setNumber("Mesh.RecombineAll", 1)
+    gmsh.option.setNumber("Mesh.ElementOrder", 2)
+    gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
+    gmsh.option.setNumber("Mesh.Binary", 0)
+    gmsh.option.setNumber("Mesh.SaveAll", 0)
+    gmsh.option.setNumber("Mesh.SaveParametric", 0)
+
     # Mesh the surfaces
     for surface in surfaces:
         gmsh.model.geo.mesh.setRecombine(2, surface)
