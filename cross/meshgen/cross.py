@@ -1,4 +1,7 @@
 import gmsh
+import numpy as np
+
+ZVAL: float = 0
 
 
 def generate_points(
@@ -26,7 +29,7 @@ def generate_points(
         for j, y in enumerate(coord_y):
             if (i, j) in exclude:
                 continue
-            tag = gmsh.model.geo.addPoint(x, y, 0)  # Add a point at (x, y, 0)
+            tag = gmsh.model.geo.addPoint(x, y, ZVAL)
             point_tags.append(tag)
             point_map[(i, j)] = tag
 
@@ -244,18 +247,101 @@ def mesh_and_save(surfaces: list[int], filename: str):
     gmsh.write(filename)
 
 
+def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
+    """
+    Generates data to set-up the case. Uses rough yplus-based wall meshing.
+
+    Parameters:
+    laminar (bool): is the flow laminar.
+    Re (float): what is the flow Reynolds number.
+    nelq (int): number of quadrature per element, roughly.
+    yplus (float): minimum yplus to be roughly achieved.
+
+    Returns:
+    coord_x (list[float]): List of x-coordinates.
+    coord_y (list[float]): List of y-coordinates.
+    disc_x (list[int]): Discretization values for lines parallel to the x-direction.
+    disc_y (list[int]): Discretization values for lines parallel to the y-direction.
+    prog_x (list[float]): Progression values for lines parallel to the x-direction.
+    prog_y (list[float]): Progression values for lines parallel to the y-direction.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
+    """
+    surface_tags = []
+    growth_rate = 1.4
+    num_y_prog = 4
+    num_x = 4
+
+    # With respect to a single arm of the cross
+    ymin = -1.0
+    ymax = 1.0
+    xlen = 2.0
+
+    if laminar:
+        ytilde = yplus / np.sqrt(3 * Re)
+    else:
+        ytilde = yplus * 20 / Re
+
+    y0 = ytilde * nelq
+
+    dyprog = 0
+    rate = 1
+    for i in range(num_y_prog - 1):
+        rate = growth_rate**i
+        dyprog += y0 * rate
+
+    rate = growth_rate ** (num_y_prog - 1)
+    dy1 = y0 * rate
+    dycst = ymax - ymin - 2 * dyprog
+    num_y_cst = int(np.ceil(dycst / dy1)) + 1
+
+    # symmetric
+    coord_x = [
+        -xlen + ymin,
+        ymin,
+        ymin + dyprog,
+        ymin + dyprog + dycst,
+        ymax,
+        ymax + xlen,
+    ]
+    coord_y = [
+        -xlen + ymin,
+        ymin,
+        ymin + dyprog,
+        ymin + dyprog + dycst,
+        ymax,
+        ymax + xlen,
+    ]
+
+    # exclude corners
+    exclude = [
+        (0, 0),
+        (len(coord_x) - 1, 0),
+        (0, len(coord_y) - 1),
+        (len(coord_x) - 1, len(coord_y) - 1),
+    ]
+
+    # discretization
+    disc_x = [num_x, num_y_prog, num_y_cst, num_y_prog, num_x]
+    disc_y = [num_x, num_y_prog, num_y_cst, num_y_prog, num_x]
+
+    # element size progression
+    prog_x = [1, growth_rate, 1, 1 / growth_rate, 1]
+    prog_y = [1, growth_rate, 1, 1 / growth_rate, 1]
+
+    return coord_x, coord_y, disc_x, disc_y, prog_x, prog_y, exclude
+
+
 # Example usage
 if __name__ == "__main__":
+    laminar = True
+    Re = 1000
+
+    coord_x, coord_y, disc_x, disc_y, prog_x, prog_y, exclude = generate_data(
+        laminar, Re
+    )
+
     gmsh.initialize()
     gmsh.model.add("2D Mesh Points and Lines")
-
-    coord_x = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
-    coord_y = [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0]
-    disc_x = [2, 3, 4, 5, 6]  # Discretization for x-direction lines
-    disc_y = [2, 3, 4, 5, 6]  # Discretization for y-direction lines
-    prog_x = [0.9, 1.1, 1.0, 0.7, 1.2]  # Progression for x-direction lines
-    prog_y = [1, 1, 1, 1, 1]  # Progression for y-direction lines
-    exclude = [(0, 0), (5, 0), (0, 5), (5, 5)]  # Exclude specific (i, j) indices
 
     points, point_map = generate_points(coord_x, coord_y, exclude)
     print(f"Generated {len(points)} points: {points}")
