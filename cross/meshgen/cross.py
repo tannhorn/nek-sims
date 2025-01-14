@@ -2,7 +2,9 @@ import gmsh
 
 
 def generate_points(
-    coord_x: list[float], coord_y: list[float]
+    coord_x: list[float],
+    coord_y: list[float],
+    exclude: list[tuple[int, int]],
 ) -> tuple[list[int], dict[tuple[int, int], int]]:
     """
     Generates points at each combination of coordinates from the input lists in Gmsh.
@@ -10,6 +12,7 @@ def generate_points(
     Parameters:
     coord_x (list[float]): List of x-coordinates.
     coord_y (list[float]): List of y-coordinates.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
 
     Returns:
     tuple: A tuple containing a list of Gmsh point tags and a mapping of coordinates to point tags.
@@ -21,6 +24,8 @@ def generate_points(
     # Generate points at each combination of coordinates
     for i, x in enumerate(coord_x):
         for j, y in enumerate(coord_y):
+            if (i, j) in exclude:
+                continue
             tag = gmsh.model.geo.addPoint(x, y, 0)  # Add a point at (x, y, 0)
             point_tags.append(tag)
             point_map[(i, j)] = tag
@@ -29,7 +34,10 @@ def generate_points(
 
 
 def generate_lines(
-    coord_x: list[float], coord_y: list[float], point_map: dict[tuple[int, int], int]
+    coord_x: list[float],
+    coord_y: list[float],
+    point_map: dict[tuple[int, int], int],
+    exclude: list[tuple[int, int]],
 ) -> dict[tuple[int, int, int, int], int]:
     """
     Generates lines between adjacent points based on the given point map.
@@ -38,6 +46,7 @@ def generate_lines(
     coord_x (list[float]): List of x-coordinates.
     coord_y (list[float]): List of y-coordinates.
     point_map (dict[tuple[int, int], int]): Mapping of coordinates to point tags.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
 
     Returns:
     dict[tuple[int, int, int, int], int]: A dictionary mapping point indices to Gmsh line tags.
@@ -47,6 +56,8 @@ def generate_lines(
     # Generate lines parallel to x-direction
     for i in range(len(coord_x) - 1):
         for j in range(len(coord_y)):
+            if (i, j) in exclude or (i + 1, j) in exclude:
+                continue
             start_tag = point_map[(i, j)]
             end_tag = point_map[(i + 1, j)]
             line_map[(i, j, i + 1, j)] = gmsh.model.geo.addLine(start_tag, end_tag)
@@ -54,6 +65,8 @@ def generate_lines(
     # Generate lines parallel to y-direction
     for i in range(len(coord_x)):
         for j in range(len(coord_y) - 1):
+            if (i, j) in exclude or (i, j + 1) in exclude:
+                continue
             start_tag = point_map[(i, j)]
             end_tag = point_map[(i, j + 1)]
             line_map[(i, j, i, j + 1)] = gmsh.model.geo.addLine(start_tag, end_tag)
@@ -69,6 +82,7 @@ def apply_transfinite_curves(
     disc_y: list[int],
     prog_x: list[float],
     prog_y: list[float],
+    exclude: list[tuple[int, int]],
 ):
     """
     Applies transfinite curves to the generated lines based on the provided progressions.
@@ -81,10 +95,13 @@ def apply_transfinite_curves(
     disc_y (list[int]): Discretization values for lines parallel to the y-direction.
     prog_x (list[float]): Progression values for lines parallel to the x-direction.
     prog_y (list[float]): Progression values for lines parallel to the y-direction.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
     """
     # Apply transfinite curves to lines parallel to x-direction
     for i in range(len(coord_x) - 1):
         for j in range(len(coord_y)):
+            if (i, j) in exclude or (i + 1, j) in exclude:
+                continue
             line_tag = lines[(i, j, i + 1, j)]
             gmsh.model.geo.mesh.setTransfiniteCurve(
                 line_tag, disc_x[i], "Progression", prog_x[i]
@@ -93,6 +110,8 @@ def apply_transfinite_curves(
     # Apply transfinite curves to lines parallel to y-direction
     for i in range(len(coord_x)):
         for j in range(len(coord_y) - 1):
+            if (i, j) in exclude or (i, j + 1) in exclude:
+                continue
             line_tag = lines[(i, j, i, j + 1)]
             gmsh.model.geo.mesh.setTransfiniteCurve(
                 line_tag, disc_y[j], "Progression", prog_y[j]
@@ -104,6 +123,7 @@ def generate_surfaces(
     coord_y: list[float],
     point_map: dict[tuple[int, int], int],
     line_map: dict[tuple[int, int, int, int], int],
+    exclude: list[tuple[int, int]],
 ) -> list[int]:
     """
     Generates transfinite surfaces for each rectangle enclosed by 4 lines.
@@ -113,6 +133,7 @@ def generate_surfaces(
     coord_y (list[float]): List of y-coordinates.
     point_map (dict[tuple[int, int], int]): Mapping of coordinates to point tags.
     line_map (dict[tuple[int, int, int, int], int]): Mapping of point indices to Gmsh line tags.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
 
     Returns:
     list[int]: A list of Gmsh surface tags.
@@ -121,6 +142,14 @@ def generate_surfaces(
 
     for i in range(len(coord_x) - 1):
         for j in range(len(coord_y) - 1):
+            if (
+                (i, j) in exclude
+                or (i + 1, j) in exclude
+                or (i, j + 1) in exclude
+                or (i + 1, j + 1) in exclude
+            ):
+                continue
+
             # Retrieve the 4 lines that define the boundary of the rectangle
             l1 = line_map[(i, j, i + 1, j)]
             l2 = line_map[(i + 1, j, i + 1, j + 1)]
@@ -146,6 +175,7 @@ def add_physical_groups(
     coord_y: list[float],
     lines: dict[tuple[int, int, int, int], int],
     surfaces: list[int],
+    exclude: list[tuple[int, int]],
 ):
     """
     Adds distinct physical groups to boundary lines and the entire surface.
@@ -155,26 +185,39 @@ def add_physical_groups(
     coord_y (list[float]): List of y-coordinates.
     lines (dict[tuple[int, int, int, int], int]): Mapping of point indices to Gmsh line tags.
     surfaces (list[int]): List of Gmsh surface tags.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
     """
     # Physical group for lines at xmin (left boundary)
-    left_lines = [lines[(0, j, 0, j + 1)] for j in range(len(coord_y) - 1)]
+    left_lines = [
+        lines[(0, j, 0, j + 1)]
+        for j in range(len(coord_y) - 1)
+        if (0, j) not in exclude and (0, j + 1) not in exclude
+    ]
     gmsh.model.addPhysicalGroup(1, left_lines, tag=1)
 
     # Physical group for lines at xmax (right boundary)
     right_lines = [
         lines[(len(coord_x) - 1, j, len(coord_x) - 1, j + 1)]
         for j in range(len(coord_y) - 1)
+        if (len(coord_x) - 1, j) not in exclude
+        and (len(coord_x) - 1, j + 1) not in exclude
     ]
     gmsh.model.addPhysicalGroup(1, right_lines, tag=2)
 
     # Physical group for lines at ymin (bottom boundary)
-    bottom_lines = [lines[(i, 0, i + 1, 0)] for i in range(len(coord_x) - 1)]
+    bottom_lines = [
+        lines[(i, 0, i + 1, 0)]
+        for i in range(len(coord_x) - 1)
+        if (i, 0) not in exclude and (i + 1, 0) not in exclude
+    ]
     gmsh.model.addPhysicalGroup(1, bottom_lines, tag=3)
 
     # Physical group for lines at ymax (top boundary)
     top_lines = [
         lines[(i, len(coord_y) - 1, i + 1, len(coord_y) - 1)]
         for i in range(len(coord_x) - 1)
+        if (i, len(coord_y) - 1) not in exclude
+        and (i + 1, len(coord_y) - 1) not in exclude
     ]
     gmsh.model.addPhysicalGroup(1, top_lines, tag=4)
 
@@ -212,20 +255,23 @@ if __name__ == "__main__":
     disc_y = [2, 3, 4, 5, 6]  # Discretization for y-direction lines
     prog_x = [0.9, 1.1, 1.0, 0.7, 1.2]  # Progression for x-direction lines
     prog_y = [1, 1, 1, 1, 1]  # Progression for y-direction lines
+    exclude = [(0, 0), (5, 0), (0, 5), (5, 5)]  # Exclude specific (i, j) indices
 
-    points, point_map = generate_points(coord_x, coord_y)
+    points, point_map = generate_points(coord_x, coord_y, exclude)
     print(f"Generated {len(points)} points: {points}")
 
-    line_map = generate_lines(coord_x, coord_y, point_map)
+    line_map = generate_lines(coord_x, coord_y, point_map, exclude)
     print(f"Generated {len(line_map)} lines.")
 
-    apply_transfinite_curves(line_map, coord_x, coord_y, disc_x, disc_y, prog_x, prog_y)
+    apply_transfinite_curves(
+        line_map, coord_x, coord_y, disc_x, disc_y, prog_x, prog_y, exclude
+    )
     print(f"Meshed {len(line_map)} lines.")
 
-    surfaces = generate_surfaces(coord_x, coord_y, point_map, line_map)
+    surfaces = generate_surfaces(coord_x, coord_y, point_map, line_map, exclude)
     print(f"Generated {len(surfaces)} surfaces: {surfaces}")
 
-    add_physical_groups(coord_x, coord_y, line_map, surfaces)
+    add_physical_groups(coord_x, coord_y, line_map, surfaces, exclude)
     print(f"Added physical groups.")
 
     mesh_and_save(surfaces, "cross.msh")
