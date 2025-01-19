@@ -4,8 +4,8 @@ import gmsh
 import numpy as np
 
 ZVAL: float = 0
-LAMINAR: bool = True
-RE: float = 1000
+LAMINAR: bool = False
+RE: float = 10000
 
 
 def generate_points(
@@ -341,7 +341,7 @@ def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
     exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
     """
     growth_rate = 1.4
-    num_y_prog = 4
+    num_y_prog = 10
     num_x = 4
 
     # With respect to a single arm of the cross
