@@ -1,7 +1,11 @@
+"""Prepare the Nek5000 mesh."""
+
 import gmsh
 import numpy as np
 
 ZVAL: float = 0
+LAMINAR: bool = True
+RE: float = 1000
 
 
 def generate_points(
@@ -124,7 +128,6 @@ def apply_transfinite_curves(
 def generate_surfaces(
     coord_x: list[float],
     coord_y: list[float],
-    point_map: dict[tuple[int, int], int],
     line_map: dict[tuple[int, int, int, int], int],
     exclude: list[tuple[int, int]],
 ) -> list[int]:
@@ -171,6 +174,58 @@ def generate_surfaces(
             surface_tags.append(surface)
 
     return surface_tags
+
+
+def add_special_boundary_group(
+    lines: dict[tuple[int, int, int, int], int],
+    exclude: list[tuple[int, int]],
+    existing_groups: list[list[int]],
+    tag: int,
+):
+    """
+    Adds lines bordering excluded points to a special physical group.
+
+    Parameters:
+    lines (dict[tuple[int, int, int, int], int]): Mapping of point indices to Gmsh line tags.
+    exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
+    existing_groups (list[list[int]]): List of line tags in existing physical groups.
+    tag (int): The tag for the new physical group.
+    """
+    # Flatten the list of existing groups into a set for fast lookups
+    existing_lines = set(line for group in existing_groups for line in group)
+
+    special_lines = []
+
+    for line_key, line_tag in lines.items():
+        # Skip lines already in an existing physical group
+        if line_tag in existing_lines:
+            continue
+
+        i1, j1, i2, j2 = line_key
+
+        # Check adjacency to excluded points
+        if i1 == i2:  # y-parallel line
+            if (
+                (i1 - 1, j1) in exclude
+                or (i1 + 1, j1) in exclude
+                or (i1 - 1, j2) in exclude
+                or (i1 + 1, j2) in exclude
+            ):
+                special_lines.append(line_tag)
+
+        elif j1 == j2:  # x-parallel line
+            if (
+                (i1, j1 - 1) in exclude
+                or (i1, j1 + 1) in exclude
+                or (i2, j2 - 1) in exclude
+                or (i2, j2 + 1) in exclude
+            ):
+                special_lines.append(line_tag)
+
+    # Add the special lines as a new physical group
+    if special_lines:
+        special_group = gmsh.model.addPhysicalGroup(1, special_lines, tag=tag)
+        gmsh.model.setPhysicalName(1, special_group, "InternalSide")
 
 
 def add_physical_groups(
@@ -228,8 +283,13 @@ def add_physical_groups(
     top_group = gmsh.model.addPhysicalGroup(1, top_lines, tag=4)
     gmsh.model.setPhysicalName(1, top_group, "TopSide")
 
+    # Inner surfaces
+    add_special_boundary_group(
+        lines, exclude, [left_lines, right_lines, bottom_lines, top_lines], tag=5
+    )
+
     # Physical group for all surfaces
-    surface_group = gmsh.model.addPhysicalGroup(2, surfaces, tag=5)
+    surface_group = gmsh.model.addPhysicalGroup(2, surfaces, tag=1000)
     gmsh.model.setPhysicalName(2, surface_group, "Domain")
 
 
@@ -280,7 +340,6 @@ def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
     prog_y (list[float]): Progression values for lines parallel to the y-direction.
     exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
     """
-    surface_tags = []
     growth_rate = 1.4
     num_y_prog = 4
     num_x = 4
@@ -347,11 +406,8 @@ def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
 
 # Example usage
 if __name__ == "__main__":
-    laminar = True
-    Re = 1000
-
     coord_x, coord_y, disc_x, disc_y, prog_x, prog_y, exclude = generate_data(
-        laminar, Re
+        LAMINAR, RE
     )
 
     gmsh.initialize()
@@ -368,11 +424,11 @@ if __name__ == "__main__":
     )
     print(f"Meshed {len(line_map)} lines.")
 
-    surfaces = generate_surfaces(coord_x, coord_y, point_map, line_map, exclude)
+    surfaces = generate_surfaces(coord_x, coord_y, line_map, exclude)
     print(f"Generated {len(surfaces)} surfaces: {surfaces}")
 
     add_physical_groups(coord_x, coord_y, line_map, surfaces, exclude)
-    print(f"Added physical groups.")
+    print("Added physical groups.")
 
     mesh_and_save(surfaces, "cross.msh")
 

@@ -87,16 +87,11 @@ c      implicit none
       include 'TOTAL'
       include 'NEKUSE'
 
-c      if (cbc(iside,gllel(eg),ifield).eq.'v01')
-
-      H    = uparam(1)     ! channel height
       um   = uparam(2)     ! mean velocity
       Tin  = uparam(3)     ! inlet temperature
       qpp  = uparam(4)     ! wall heat flux
 
-      ux   = um*3./2.*(1-4.*(y/H)**2)
-      uy   = 0.0
-      uz   = 0.0
+      un = -um
       temp = Tin
       flux = qpp
 
@@ -114,13 +109,10 @@ c      implicit none
       include 'TOTAL'
       include 'NEKUSE'
 
-      um = uparam(2)
-      Tin = uparam(3)
-      
-      ux   = um
+      ux   = 0.0
       uy   = 0.0
       uz   = 0.0
-      temp = Tin
+      temp = 0.0
 
       return
       end
@@ -149,15 +141,17 @@ c      implicit none
       include 'SIZE'
       include 'TOTAL'
 
-      call setbc(1,1,'v  ') ! set bcID 1 to inlet for field 1 (velocity)
-      call setbc(2,1,'W  ') ! set bcID 2 to wall for field 1 (velocity)
-      call setbc(3,1,'W  ') ! set bcID 3 to wall for field 1 (velocity)
-      call setbc(4,1,'O  ') ! set bcID 4 to outlet for field 1 (velocity)
+      call setbc(1,1,'vl ') ! set bcID 1 to inlet for field 1 (velocity)
+      call setbc(2,1,'O  ') ! set bcID 2 to outlet for field 1 (velocity)
+      call setbc(3,1,'vl ') ! set bcID 3 to wall for field 1 (velocity)
+      call setbc(4,1,'O  ') ! set bcID 4 to wall for field 1 (velocity)
+      call setbc(5,1,'W  ') ! set bcID 5 to wall for field 1 (velocity)
 
       call setbc(1,2,'t  ') ! set bcID 1 to inlet for field 2 (temperature)
-      call setbc(2,2,'f  ') ! set bcID 2 to flux for field 2 (temperature)
-      call setbc(3,2,'f  ') ! set bcID 3 to flux for field 2 (temperature)
-      call setbc(4,2,'O  ') ! set bcID 4 to outlet for field 2 (temperature)
+      call setbc(2,2,'O  ') ! set bcID 2 to outlet for field 2 (temperature)
+      call setbc(3,2,'I  ') ! set bcID 3 to flux for field 2 (temperature)
+      call setbc(4,2,'O  ') ! set bcID 4 to flux for field 2 (temperature)
+      call setbc(5,2,'I  ') ! set bcID 5 to flux for field 2 (temperature)
 
       return
       end

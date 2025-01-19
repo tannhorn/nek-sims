@@ -3,21 +3,22 @@
 #
 [GENERAL]
 stopAt = endTime
-endTime  = 10
+endTime  = 20
 variableDT = yes
-targetCFL = 0.8
+targetCFL = 0.5
+dt = 2e-3
 writeControl = runTime
-writeInterval = 10
+writeInterval = 0.5
 
 userParam01 = 2      # channel height [-]
 userParam02 = 1      # mean velocity [-]
 userParam03 = 1      # inlet temperature [-]
-userParam04 = 1000   # heat flux [-]
+userParam04 = 0      # heat flux [-]
 
 [VELOCITY]
 density = 1.0        # -
-viscosity = -1000    # 1/Re
+viscosity = -100     # 1/Re
 
 [TEMPERATURE]
 rhoCp = 1.0          # J/m3-K
-conductivity = 1.0   # W/m-K
+conductivity = 1e-2   # W/m-K
