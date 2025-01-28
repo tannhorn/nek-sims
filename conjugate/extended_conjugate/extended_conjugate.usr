@@ -1,0 +1,222 @@
+c-----------------------------------------------------------------------
+c  nek5000 user-file template
+c
+c  user specified routines:
+c     - uservp  : variable properties
+c     - userf   : local acceleration term for fluid
+c     - userq   : local source term for scalars
+c     - userbc  : boundary conditions
+c     - useric  : initial conditions
+c     - userchk : general purpose routine for checking errors etc.
+c     - userqtl : thermal divergence for lowMach number flows 
+c     - usrdat  : modify element vertices 
+c     - usrdat2 : modify mesh coordinates
+c     - usrdat3 : general purpose routine for initialization
+c     
+c-----------------------------------------------------------------------
+      subroutine uservp(ix,iy,iz,eg) ! set variable properties
+
+c      implicit none
+
+      integer ix,iy,iz,eg
+     
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      integer e
+c     e = gllel(eg)
+
+      udiff  = 0.0
+      utrans = 0.0
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userf(ix,iy,iz,eg) ! set acceleration term
+c
+c     Note: this is an acceleration term, NOT a force!
+c     Thus, ffx will subsequently be multiplied by rho(x,t).
+c
+c      implicit none
+
+      integer ix,iy,iz,eg
+
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      integer e
+c     e = gllel(eg)
+
+      ffx = 0.0
+      ffy = 0.0
+      ffz = 0.0
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userq(ix,iy,iz,eg) ! set source term
+
+c      implicit none
+
+      integer ix,iy,iz,eg
+
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      integer e
+c     e = gllel(eg)
+
+      qvol   = 0.0
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userbc(ix,iy,iz,iside,eg) ! set up boundary conditions
+c
+c     NOTE ::: This subroutine MAY NOT be called by every process
+c
+c      implicit none
+
+      integer ix,iy,iz,iside,eg
+      real H,um,qpp,Tin
+
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+c      if (cbc(iside,gllel(eg),ifield).eq.'v01')
+
+      H    = uparam(1)     ! channel height
+      um   = uparam(2)     ! mean velocity
+      Tin  = uparam(3)     ! inlet temperature
+      qpp  = uparam(4)     ! wall heat flux
+
+      ux   = um*6.*((1.0-y)/H)**2
+      uy   = 0.0
+      uz   = 0.0
+      temp = Tin
+      flux = qpp
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine useric(ix,iy,iz,eg) ! set up initial conditions
+
+c      implicit none
+
+      integer ix,iy,iz,eg
+      real um,Tin
+
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      um = uparam(2)
+      Tin = uparam(3)
+      
+      ux   = um
+      uy   = 0.0
+      uz   = 0.0
+      temp = 0.0
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userchk()
+
+c      implicit none
+
+      include 'SIZE'
+      include 'TOTAL'
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userqtl ! Set thermal divergence
+
+      call userqtl_scig 
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat()   ! This routine to modify element vertices
+
+c      implicit none
+
+      include 'SIZE'
+      include 'TOTAL'
+
+      call setbc(1,1,'v  ') ! set bcID 1 to inlet for field 1 (velocity)
+      call setbc(2,1,'O  ') ! set bcID 2 to outlet for field 1 (velocity)
+      call setbc(3,1,'SYM') ! set bcID 3 to symmetry for field 1 (velocity)
+      call setbc(4,1,'W  ') ! set bcID 4 to wall for field 1 (velocity)
+      call setbc(5,1,'SYM') ! set bcID 5 to symmetry for field 1 (velocity)
+
+      call setbc(1,2,'t  ') ! set bcID 1 to inlet for field 2 (temperature)
+      call setbc(2,2,'O  ') ! set bcID 2 to outlet for field 2 (temperature)
+      call setbc(3,2,'SYM') ! set bcID 3 to symmetry for field 2 (temperature)
+      call setbc(4,2,'E  ') ! set bcID 4 to internal for field 2 (temperature)
+      call setbc(5,2,'t  ') ! set bcID 5 to dirichlet for field 2 (temperature)
+
+      call setbc(15,2,'I  ') ! set bcID 15 to insulated for field 2 (temperature)
+      call setbc(16,2,'E  ') ! set bcID 16 to internal for field 2 (temperature)
+      call setbc(17,2,'f  ') ! set bcID 7 to flux for field 2 (temperature)
+      call setbc(18,2,'I  ') ! set bcID 8 to insulated for field 2 (temperature)
+
+c     do iel=1,nelt
+c       eg = lglel(iel) ! return global element number from local element number
+c       if (eg.le.nelgv) then        ! for fuild elements
+c         do ifc=1,2*ndim
+c           if (bc(5,ifc,iel,1).eq.1) then ! inlet @ 1
+c               cbc(ifc,iel,1) = 'v  '
+c               cbc(ifc,iel,2) = 't  '
+c           else if   (bc(5,ifc,iel,1).eq.2) then ! sym @ 2
+c               cbc(ifc,iel,1) = 'SYM'
+c               cbc(ifc,iel,2) = 'SYM'
+c           else if   (bc(5,ifc,iel,1).eq.3) then ! connect wall @ 3
+c               cbc(ifc,iel,1) = 'W  '
+c               cbc(ifc,iel,2) = 'E  '
+c           else ! outlet @ 4
+c               cbc(ifc,iel,1) = 'O  '
+c               cbc(ifc,iel,2) = 'O  '
+c           endif
+c         enddo
+c       else                           ! for solid elements
+c         do ifc=1,2*ndim
+c           if (bc(5,ifc,iel,2).eq.6) then ! connect wall @ 6
+c             cbc(ifc,iel,2) = 'E  '
+c           else if   (bc(5,ifc,iel,2).eq.7) then ! flux @ 7
+c             cbc(ifc,iel,2) = 'f  '
+c           else ! insulated @ 5, 8
+c             cbc(ifc,iel,2) = 'O  '
+c           endif
+c         enddo
+c       endif
+
+c     enddo
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat2()  ! This routine to modify mesh coordinates
+
+c      implicit none
+
+      include 'SIZE'
+      include 'TOTAL'
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat3()
+
+c      implicit none
+
+      include 'SIZE'
+      include 'TOTAL'
+
+      return
+      end
