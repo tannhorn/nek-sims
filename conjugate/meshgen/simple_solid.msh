@@ -7,7 +7,7 @@ $PhysicalNames
 1 6 "BottomSolid"
 1 7 "TopSolid"
 1 8 "SolidMax"
-2 9 "SolidSurface"
+2 10 "SolidSurface"
 $EndPhysicalNames
 $Nodes
 63

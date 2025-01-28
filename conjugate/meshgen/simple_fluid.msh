@@ -7,7 +7,7 @@ $PhysicalNames
 1 2 "BottomSide"
 1 3 "TopSide"
 1 4 "Outlet"
-2 5 "MainSurface"
+2 9 "MainSurface"
 $EndPhysicalNames
 $Nodes
 63

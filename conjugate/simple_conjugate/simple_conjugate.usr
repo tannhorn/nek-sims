@@ -158,10 +158,10 @@ c      implicit none
       call setbc(2,2,'SYM') ! set bcID 2 to flux for field 2 (temperature)
       call setbc(3,2,'E  ') ! set bcID 3 to symmetry for field 2 (temperature)
       call setbc(4,2,'O  ') ! set bcID 4 to outlet for field 2 (temperature)
-      call setbc(6,2,'SYM') ! set bcID 1 to inlet for field 2 (temperature)
-      call setbc(7,2,'SYM') ! set bcID 2 to flux for field 2 (temperature)
-      call setbc(8,2,'E  ') ! set bcID 3 to symmetry for field 2 (temperature)
-      call setbc(9,2,'SYM') ! set bcID 4 to outlet for field 2 (temperature)
+      call setbc(5,2,'SYM') ! set bcID 5 to inlet for field 2 (temperature)
+      call setbc(6,2,'SYM') ! set bcID 6 to flux for field 2 (temperature)
+      call setbc(7,2,'E  ') ! set bcID 7 to symmetry for field 2 (temperature)
+      call setbc(8,2,'SYM') ! set bcID 8 to outlet for field 2 (temperature)
 
       return
       end
