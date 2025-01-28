@@ -1,0 +1,24 @@
+#
+# nek parameter file
+#
+[GENERAL]
+stopAt = endTime
+endTime  = 10
+variableDT = yes
+targetCFL = 0.8
+writeControl = runTime
+writeInterval = 1
+
+userParam01 = 2      # channel height [-]
+userParam02 = 1      # mean velocity [-]
+userParam03 = 1      # inlet temperature [-]
+userParam04 = 1000   # heat flux [-]
+
+[VELOCITY]
+density = 1.0        # -
+viscosity = -1000    # 1/Re
+
+[TEMPERATURE]
+conjugateHeatTransfer = yes
+rhoCp = 1.0          # J/m3-K
+conductivity = 1.0   # W/m-K

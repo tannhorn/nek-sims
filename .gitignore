@@ -8,3 +8,4 @@ makefile
 *.f0*
 .state
 .usr
+*log*
