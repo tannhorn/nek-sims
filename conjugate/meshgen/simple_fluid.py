@@ -126,7 +126,9 @@ gmsh.model.setPhysicalName(1, outlet_group, "Outlet")
 
 # Add a physical group for the surface
 surfaces = [tag[1] for tag in extrusion if tag[0] == 2]  # Extract all surfaces
-main_surface_group = gmsh.model.addPhysicalGroup(2, surfaces)  # All extruded surfaces
+main_surface_group = gmsh.model.addPhysicalGroup(
+    2, surfaces, 101
+)  # All extruded surfaces
 gmsh.model.setPhysicalName(2, main_surface_group, "MainSurface")
 
 # -----------------------------------------------------------------------------

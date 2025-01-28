@@ -79,7 +79,7 @@ gmsh.model.geo.synchronize()
 # 4) Add physical groups
 # -----------------------------------------------------------------------------
 inlet_tags = [l1]
-inlet_group = gmsh.model.addPhysicalGroup(1, inlet_tags)
+inlet_group = gmsh.model.addPhysicalGroup(1, inlet_tags, 5)
 gmsh.model.setPhysicalName(1, inlet_group, "SolidMin")
 
 all_lines = gmsh.model.getEntities(dim=1)  # Get all 1D entities
@@ -113,20 +113,22 @@ left_side = sorted_lines[0][0]  # Line with the smallest y-coordinate
 right_side = sorted_lines[-1][0]  # Line with the largest y-coordinate
 
 # Assign to physical groups
-left_side_group = gmsh.model.addPhysicalGroup(1, [left_side])
+left_side_group = gmsh.model.addPhysicalGroup(1, [left_side], 6)
 gmsh.model.setPhysicalName(1, left_side_group, "BottomSolid")
 
-right_side_group = gmsh.model.addPhysicalGroup(1, [right_side])
+right_side_group = gmsh.model.addPhysicalGroup(1, [right_side], 7)
 gmsh.model.setPhysicalName(1, right_side_group, "TopSolid")
 
 # The outlet (right) is everything else
 outlet_tags = set(all_line_tags) - set(x_line_tags) - set(inlet_tags)
-outlet_group = gmsh.model.addPhysicalGroup(1, list(outlet_tags))
+outlet_group = gmsh.model.addPhysicalGroup(1, list(outlet_tags), 8)
 gmsh.model.setPhysicalName(1, outlet_group, "SolidMax")
 
 # Add a physical group for the surface
 surfaces = [tag[1] for tag in extrusion if tag[0] == 2]  # Extract all surfaces
-main_surface_group = gmsh.model.addPhysicalGroup(2, surfaces)  # All extruded surfaces
+main_surface_group = gmsh.model.addPhysicalGroup(
+    2, surfaces, 102
+)  # All extruded surfaces
 gmsh.model.setPhysicalName(2, main_surface_group, "SolidSurface")
 
 # -----------------------------------------------------------------------------
