@@ -204,15 +204,15 @@ c      implicit none
 
       call setbc(1,1,'vl ') ! set bcID 1 to inlet for field 1 (velocity)
       call setbc(2,1,'O  ') ! set bcID 2 to outlet for field 1 (velocity)
-      call setbc(3,1,'vl ') ! set bcID 3 to wall for field 1 (velocity)
-      call setbc(4,1,'O  ') ! set bcID 4 to wall for field 1 (velocity)
+      call setbc(3,1,'vl ') ! set bcID 3 to inlet for field 1 (velocity)
+      call setbc(4,1,'O  ') ! set bcID 4 to outlet for field 1 (velocity)
       call setbc(5,1,'W  ') ! set bcID 5 to wall for field 1 (velocity)
 
-      call setbc(1,2,'t  ') ! set bcID 1 to inlet for field 2 (temperature)
-      call setbc(2,2,'O  ') ! set bcID 2 to outlet for field 2 (temperature)
-      call setbc(3,2,'I  ') ! set bcID 3 to flux for field 2 (temperature)
-      call setbc(4,2,'O  ') ! set bcID 4 to flux for field 2 (temperature)
-      call setbc(5,2,'I  ') ! set bcID 5 to flux for field 2 (temperature)
+      call setbc(1,2,'t  ') ! set bcID 1 to inlet for field 2 (temp)
+      call setbc(2,2,'O  ') ! set bcID 2 to outlet for field 2 (temp)
+      call setbc(3,2,'I  ') ! set bcID 3 to insulated for field 2 (temp)
+      call setbc(4,2,'O  ') ! set bcID 4 to outlet for field 2 (temp)
+      call setbc(5,2,'I  ') ! set bcID 5 to insulated for field 2 (temp)
 
       return
       end
@@ -254,8 +254,11 @@ c     w_id = 1 ! cheap_dist (path to wall, may work better for periodic boundari
 
       call rans_init(ifld_tke,ifld_tau,ifcoeffs,coeffs,w_id,wd,m_id)
 
-      call setbc(1,3,'t  ') ! set bcID 1 to inlet for field 2 (temperature)
-      call setbc(1,4,'t  ') ! set bcID 1 to inlet for field 2 (temperature)
+      call setbc(1,3,'t  ') ! set bcID 1 to inlet for field 3 (k)
+      call setbc(1,4,'t  ') ! set bcID 1 to inlet for field 3 (tau)
+
+      call setbc(3,3,'t  ') ! set bcID 3 to inlet for field 3 (k)
+      call setbc(3,4,'t  ') ! set bcID 3 to inlet for field 3 (tau)
 
       return
       end

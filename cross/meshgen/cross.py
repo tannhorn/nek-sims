@@ -4,8 +4,8 @@ import gmsh
 import numpy as np
 
 ZVAL: float = 0
-LAMINAR: bool = False
-RE: float = 10000
+LAMINAR: bool = True
+RE: float = 1000
 
 
 def generate_points(
@@ -341,13 +341,15 @@ def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
     exclude (list[tuple[int, int]]): List of (i, j) indices to exclude.
     """
     growth_rate = 1.4
-    num_y_prog = 10
-    num_x = 4
+    num_y_prog = 4
+    num_x_inlet = 4
+    num_x_outlet = 10
 
     # With respect to a single arm of the cross
     ymin = -1.0
     ymax = 1.0
-    xlen = 2.0
+    xlen_inlet = 2.0
+    xlen_outlet = 8.0
 
     if laminar:
         ytilde = yplus / np.sqrt(3 * Re)
@@ -367,22 +369,22 @@ def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
     dycst = ymax - ymin - 2 * dyprog
     num_y_cst = int(np.ceil(dycst / dy1)) + 1
 
-    # symmetric
+    # symmetric x/y
     coord_x = [
-        -xlen + ymin,
+        -xlen_inlet + ymin,
         ymin,
         ymin + dyprog,
         ymin + dyprog + dycst,
         ymax,
-        ymax + xlen,
+        ymax + xlen_outlet,
     ]
     coord_y = [
-        -xlen + ymin,
+        -xlen_inlet + ymin,
         ymin,
         ymin + dyprog,
         ymin + dyprog + dycst,
         ymax,
-        ymax + xlen,
+        ymax + xlen_outlet,
     ]
 
     # exclude corners
@@ -394,8 +396,8 @@ def generate_data(laminar: bool, Re: float, nelq: int = 7, yplus: float = 1.0):
     ]
 
     # discretization
-    disc_x = [num_x, num_y_prog, num_y_cst, num_y_prog, num_x]
-    disc_y = [num_x, num_y_prog, num_y_cst, num_y_prog, num_x]
+    disc_x = [num_x_inlet, num_y_prog, num_y_cst, num_y_prog, num_x_outlet]
+    disc_y = [num_x_inlet, num_y_prog, num_y_cst, num_y_prog, num_x_outlet]
 
     # element size progression
     prog_x = [1, growth_rate, 1, 1 / growth_rate, 1]

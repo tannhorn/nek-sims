@@ -3,12 +3,13 @@
 #
 [GENERAL]
 stopAt = endTime
-endTime  = 1e-1
+endTime  = 5
 variableDT = yes
 targetCFL = 0.5
 dt = 2e-4
 writeControl = runTime
-writeInterval = 1e-2
+writeInterval = 0.5
+startFrom = data.restart time=0.0
 
 userParam01 = 2      # channel height [-]
 userParam02 = 1      # mean velocity [-]
@@ -17,7 +18,7 @@ userParam04 = 0      # heat flux [-]
 
 [VELOCITY]
 density = 1.0        # -
-viscosity = -10000   # 1/Re
+viscosity = -250    # 1/Re
 
 [TEMPERATURE]
 rhoCp = 1.0          # J/m3-K
@@ -26,11 +27,11 @@ conductivity = 1e-2   # W/m-K
 #tke
 [SCALAR01]
 density = 1.0
-diffusivity = -10000
+diffusivity = -250
 residualTol = 1.0e-6
 
 #tau
 [SCALAR02]
 density = 1.0
-diffusivity = -10000
+diffusivity = -250
 residualTol = 1.0e-6
